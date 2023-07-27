@@ -23,7 +23,6 @@ const SideDrawer = () => {
     const navigate = useNavigate()
     //context provider
     const { user, setSelectedChat, chats, setChats, } = ChatState();
-
     const { isOpen, onOpen, onClose } = useDisclosure()
 
     const logoutHandler = () => {
@@ -47,7 +46,6 @@ const SideDrawer = () => {
 
         try {
             setLoading(true);
-
             const config = {
                 headers: {
                     Authorization: `Bearer ${user.token}`,
@@ -55,7 +53,6 @@ const SideDrawer = () => {
             };
 
             const { data } = await axios.get(`/api/user?search=${search}`, config);
-
             setLoading(false);
             setSearchResult(data);
         } catch (error) {

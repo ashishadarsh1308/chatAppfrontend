@@ -8,11 +8,8 @@ import { getSender } from '../config/ChatLogics';
 import GroupChatModel from './miscellaneous/GroupChatModel';
 
 const MyChats = ({ fetchAgain }) => { // Destructure `fetchAgain` from props
-
   const [loggedUser, setLoggedUser] = useState();
-
   const { selectedChat, setSelectedChat, user, chats, setChats } = ChatState();
-
   const toast = useToast();
 
   const fetchChats = async () => {
@@ -70,8 +67,7 @@ const MyChats = ({ fetchAgain }) => { // Destructure `fetchAgain` from props
         >
           My Chats
         </Box>
-        <GroupChatModel>
-        </GroupChatModel>
+        <GroupChatModel />
       </div>
       {/* <Button
             // d="flex"
@@ -83,8 +79,6 @@ const MyChats = ({ fetchAgain }) => { // Destructure `fetchAgain` from props
           >
             New Group
           </Button> */}
-
-
 
       <Box
         display="flex"
@@ -124,7 +118,6 @@ const MyChats = ({ fetchAgain }) => { // Destructure `fetchAgain` from props
         )}
       </Box>
     </Box>
-
   )
 }
 
