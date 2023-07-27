@@ -18,6 +18,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     const [loading, setLoading] = useState(false);
     const [newMessage, setNewMessage] = useState();
     const [socketConnected, setSocketConnected] = useState(false)
+    const [typing, setTyping] = useState(false)
+    const [isTyping, setIsTyping] = useState(false)
+
     const { user, selectedChat, setSelectedChat } = ChatState()
     const toast = useToast();
 
@@ -36,8 +39,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             const { data } = await axios.get(
                 `/api/message/${selectedChat._id}`, config
             )
-
-
             setMessage(data);
             setLoading(false)
             // console.log(data);
@@ -56,12 +57,38 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
 
     useEffect(() => {
+        socket = io(ENDPOINT);
+        socket.emit("setup", user);
+        socket.on("connected", () => setSocketConnected(true));
+        socket.on("typing", () => setIsTyping(true));
+        socket.on("stop typing", () => setIsTyping(false));
+    }, [])
+
+    useEffect(() => {
         fetchMessages();
+        selectedChatCompare = selectedChat
     }, [selectedChat])
+
+    useEffect(() => {
+        socket.on("message recieved", (newMessageRecieved) => {
+            if (
+                !selectedChatCompare || // if chat is not selected or doesn't match current chat
+                selectedChatCompare._id !== newMessageRecieved.chat._id
+            ) {
+                // if (!notification.includes(newMessageRecieved)) {
+                //     setNotification([newMessageRecieved, ...notification]);
+                //     setFetchAgain(!fetchAgain);
+            }
+            else {
+                setMessage([...message, newMessageRecieved]);
+            }
+        });
+    });
 
 
     const sendMessage = async (event) => {
         if (event.key === 'Enter' && newMessage) {
+            socket.emit('stop typing', selectedChat._id)
             try {
                 const config = {
                     headers: {
@@ -78,7 +105,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                         chatId: selectedChat._id,
                     }, config);
 
-
+                socket.emit('new message', data)
                 setMessage([...message, data])
                 // console.log(message);
 
@@ -95,15 +122,24 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         }
     }
 
-    useEffect(() => {
-        socket = io(ENDPOINT)
-        socket.emit("setup", user)
-        socket.on("connection", () => setSocketConnected(true))
-    }, [])
-
     const typingHandler = (e) => {
         setNewMessage(e.target.value);
-        // typing logic here 
+        if (!socketConnected) return;
+
+        if (!typing) {
+            setTyping(true);
+            socket.emit("typing", selectedChat._id);
+        }
+        let lastTypingTime = new Date().getTime();
+        var timerLength = 3000;
+        setTimeout(() => {
+            var timeNow = new Date().getTime();
+            var timeDiff = timeNow - lastTypingTime;
+            if (timeDiff >= timerLength && typing) {
+                socket.emit("stop typing", selectedChat._id);
+                setTyping(false);
+            }
+        }, timerLength);
     }
 
     return (
@@ -116,7 +152,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                         px={2}
                         w="100%"
                         fontFamily=""
-                        // d="flex"
                         justifyContent={{ base: "space-between" }}
                         alignItems="center"
                     >
@@ -131,7 +166,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                                     _hover={{ bg: 'green.400' }}
                                     onClick={() => setSelectedChat("")}
                                 />
-                                <div style={{ alignSelf: "center", paddingLeft: '10px', paddingBottom: '10px' }}>
+                                <div style={{ alignSelf: "center", paddingLeft: '10px' }}>
                                     👨‍💻{getSender(user, selectedChat.users)}
                                 </div>
                                 <div style={{ marginLeft: "auto" }}>
@@ -149,7 +184,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                                         _hover={{ bg: 'green.400' }}
                                         onClick={() => setSelectedChat("")}
                                     />
-                                    <div style={{ alignSelf: "center", paddingLeft: '10px', paddingBottom: '10px' }}>
+                                    <div style={{ alignSelf: "center", paddingLeft: '10px' }}>
                                         👨‍👨‍👧‍👧{selectedChat.chatName.toUpperCase()}
                                     </div>
                                     <div style={{ marginLeft: "auto" }}>
@@ -169,12 +204,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
 
                     <Box
+                        paddingTop={'20px'}
                         display="flex"
-                        flexDir="column"
+                        flexDirection="column"
                         justifyContent="flex-end"
                         p={3}
                         w="100%"
-                        h="450px"
+                        h="560px"
                         borderRadius="lg"
                         overflowY="hidden"
                     >
@@ -193,6 +229,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                             </div>
                         )}
                         <FormControl onKeyDown={sendMessage} isRequired mt={3} >
+                            {isTyping ? (
+                                <div
+                                    style={{ padding: '0 0 10px 40px' }}
+                                >
+                                    👨‍💻  Typing...
+                                </div>
+                            ) : <></>}
                             <Input
                                 variant='filled'
                                 bg={'#E0E0E0'}

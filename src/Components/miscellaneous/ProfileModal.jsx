@@ -23,7 +23,7 @@ const ProfileModal = ({ user, children }) => {
                     </IconButton>
                 )
             }
-            <Modal size="lg" onClose={onClose} isOpen={isOpen} isCentered>
+            <Modal size="lg" onClose={onClose} isOpen={isOpen} isCentered >
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader
